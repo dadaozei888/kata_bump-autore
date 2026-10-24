@@ -2,8 +2,12 @@ name: Katabump Auto Renew
 
 on:
   schedule:
-  - cron: '20 22 */3 * *'  # 每天 UTC 22:30 (北京时间 6:30点) 运行,根据服务到期时间自行修改
+  - cron: '20 22 */3 * *'  # 每 3 天 UTC 22:20 (北京时间次日 06:20) 运行,根据服务到期时间自行修改
   workflow_dispatch: # 允许手动触发
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   Renew-Katabump:
@@ -11,9 +15,11 @@ jobs:
     permissions:
       contents: write
       actions: write
-    
+
     steps:
     - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
     - name: ⚙ 设置 Python
       uses: actions/setup-python@v6
       with:
@@ -54,9 +60,10 @@ jobs:
           echo "No need to commit"
         else
           git commit -m "⏱️ Auto Update by Github Actions $(TZ=Asia/Shanghai date +'%Y-%m-%d %H:%M:%S')"
+          git pull --rebase origin main
           git push origin main
         fi
-        
+
     - name: 🧹 清理旧的工作流运行记录
       if: always()
       env:
